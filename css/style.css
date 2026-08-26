@@ -1323,6 +1323,15 @@ p:last-child {
   opacity: 1;
 }
 
+.toast-notification.toast-error {
+  background: #7f1d1d;
+  border-color: #f87171;
+}
+
+.toast-notification.toast-error .toast-icon {
+  color: #f87171;
+}
+
 .toast-icon {
   font-size: 2rem;
   color: var(--color-gold-light);

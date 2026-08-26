@@ -140,17 +140,66 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (isValid) {
-        const clientName = nameInput.value.trim();
-        const submitBtn = document.getElementById('form-submit-btn');
+        const clientName   = nameInput.value.trim();
+        const clientEmail  = emailInput.value.trim();
+        const clientPhone  = phoneInput.value.trim();
+        const serviceVal   = serviceSelect.value;
+        const locationVal  = document.getElementById('fitting-location').value;
+        const messageVal   = document.getElementById('client-message').value.trim();
+        const submitBtn    = document.getElementById('form-submit-btn');
+
         submitBtn.disabled = true;
         submitBtn.innerHTML = `<span class="material-symbols-outlined icon-sm">sync</span> Transmitting Consultation Request...`;
 
-        setTimeout(() => {
-          showToast(`Consultation Requested, ${clientName}!`, 'Our atelier manager will reach out via WhatsApp & email within 24 hours.');
-          form.reset();
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = `<span class="material-symbols-outlined">send</span> Submit Consultation Request`;
-        }, 800);
+        // Build a descriptive subject line
+        const subject = `Bespoke Consultation Request — ${serviceVal} (${clientName})`;
+
+        // Compose the message body
+        const message = [
+          `Phone / WhatsApp: ${clientPhone}`,
+          `Service of Interest: ${serviceVal}`,
+          `Preferred Fitting Location: ${locationVal}`,
+          messageVal ? `\nClient Notes:\n${messageVal}` : ''
+        ].filter(Boolean).join('\n');
+
+        fetch('https://api.formsend.ezeroandone.io/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            api_key: 'f49f0fce40b4aac1d3699fe7d469622481de0d03555bf0324be348b5bd185d90',
+            name: clientName,
+            email: clientEmail,
+            subject: subject,
+            message: message
+          })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              showToast(
+                `Consultation Requested, ${clientName}!`,
+                'Our atelier manager will reach out via WhatsApp & email within 24 hours.'
+              );
+              form.reset();
+            } else {
+              showToast(
+                'Submission Failed',
+                data.message || 'Something went wrong. Please try again or email us directly.',
+                true
+              );
+            }
+          })
+          .catch(() => {
+            showToast(
+              'Network Error',
+              'Unable to send your request. Please check your connection or email us directly.',
+              true
+            );
+          })
+          .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span class="material-symbols-outlined">send</span> Submit Consultation Request`;
+          });
       }
     });
 
@@ -182,10 +231,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function showToast(title, message) {
+  function showToast(title, message, isError = false) {
     if (!toast) return;
+    const toastIcon = document.getElementById('toast-icon');
     toastTitle.textContent = title;
     toastMessage.textContent = message;
+    if (isError) {
+      toast.classList.add('toast-error');
+      if (toastIcon) toastIcon.textContent = 'error';
+    } else {
+      toast.classList.remove('toast-error');
+      if (toastIcon) toastIcon.textContent = 'check_circle';
+    }
     toast.classList.add('show');
 
     setTimeout(() => {
